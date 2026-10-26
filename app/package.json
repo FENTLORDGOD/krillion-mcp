@@ -1,0 +1,38 @@
+{
+  "name": "krillion-room-bot",
+  "version": "1.0.0",
+  "description": "Plays Krillion multiplayer rooms as its own named player, using a dataset of past answers",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --linux AppImage"
+  },
+  "author": "FENTLORDGOD <kacperglow3@gmail.com>",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "productName": "Krillion Room Bot",
+  "build": {
+    "appId": "org.krillion.roombot",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "renderer.js"
+    ],
+    "extraResources": [
+      {
+        "from": "../data/answers.json",
+        "to": "answers.json"
+      }
+    ],
+    "linux": {
+      "target": "AppImage",
+      "category": "Game",
+      "artifactName": "Krillion-Room-Bot-${version}-${arch}.AppImage"
+    },
+    "publish": null
+  }
+}

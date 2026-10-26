@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>Krillion Room Bot</title>
+<style>
+  :root { --bg:#081826; --panel:#0e2536; --line:#1d3b52; --text:#d8ecf7; --muted:#7fa3b8; --accent:#4fd1e8;
+          --t5:#ff6b9d; --t4:#ffb347; --t3:#7bd88f; --t2:#6fb7ff; --t1:#9aa7b0; --miss:#e05555; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 system-ui, sans-serif; }
+  header { padding:14px 16px 0; }
+  h1 { margin:0; font-size:18px; letter-spacing:.04em; }
+  .sub { color:var(--muted); font-size:12px; }
+  nav { display:flex; gap:4px; padding:12px 16px 0; }
+  nav button { flex:1; background:none; border:1px solid var(--line); border-bottom:none; color:var(--muted);
+               padding:8px; border-radius:8px 8px 0 0; cursor:pointer; font:inherit; }
+  nav button.on { background:var(--panel); color:var(--text); }
+  section { display:none; background:var(--panel); margin:0 16px 16px; padding:14px; border:1px solid var(--line);
+            border-radius:0 0 8px 8px; }
+  section.on { display:block; }
+  label { display:block; color:var(--muted); font-size:12px; margin:10px 0 4px; }
+  input, select { width:100%; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:6px;
+                  padding:8px; font:inherit; }
+  .row { display:flex; gap:8px; } .row > * { flex:1; }
+  .go { margin-top:14px; width:100%; padding:10px; border:none; border-radius:6px; font:600 15px system-ui;
+        background:var(--accent); color:#04202b; cursor:pointer; }
+  .go.stop { background:var(--miss); color:white; }
+  .note { margin-top:10px; padding:8px 10px; border-left:3px solid var(--t4); background:#1a2a33; font-size:12px; color:var(--muted); }
+  .code { margin-top:12px; text-align:center; font:700 26px ui-monospace, monospace; letter-spacing:.15em; color:var(--accent); }
+  .score { display:flex; justify-content:space-between; margin-top:12px; font-size:13px; color:var(--muted); }
+  .score b { color:var(--text); font-size:16px; }
+  #feed { list-style:none; padding:0; margin:10px 0 0; max-height:300px; overflow:auto; }
+  #feed li { padding:7px 0; border-top:1px solid var(--line); }
+  .p { color:var(--muted); font-size:12px; } .a { font-weight:600; }
+  .tag { float:right; font-size:11px; padding:1px 7px; border-radius:10px; background:var(--line); }
+  .krillion { background:var(--t5); color:#2a0012 } .deepcut { background:var(--t4); color:#2a1700 }
+  .rare { background:var(--t3); color:#002a0c } .schooler { background:var(--t2); color:#001a33 }
+  .tooclever, .plankton { background:var(--t1); color:#111 } .miss { background:var(--miss); color:white }
+  #status { color:var(--muted); font-size:12px; margin-top:8px; min-height:18px; }
+  #results .q { margin-top:10px; font-weight:600; }
+  #results .ans { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+  #results .ans span { font-size:11px; padding:2px 6px; border-radius:4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>KRILLION ROOM BOT</h1>
+  <div class="sub" id="stats">Loading dataset…</div>
+</header>
+<nav><button class="on" data-tab="play">Play</button><button data-tab="data">Dataset</button></nav>
+
+<section id="play" class="on">
+  <label>Room</label>
+  <div class="row">
+    <select id="mode"><option value="create">Create a private room</option><option value="join">Join by code</option></select>
+    <input id="code" placeholder="6-digit code" maxlength="7" style="display:none">
+  </div>
+  <div class="row">
+    <div><label>Prompts</label><select id="prompts"><option>5</option><option selected>7</option><option>10</option><option>15</option><option>25</option><option>50</option></select></div>
+    <div><label>Pace</label><select id="pace"><option value="human">Human (thinks, then types)</option><option value="fast">Instant</option></select></div>
+  </div>
+  <button class="go" id="go">Start</button>
+  <div class="note">The bot plays as its own player in a separate window. Tell the other people in the room which player is the bot.</div>
+  <div class="code" id="room"></div>
+  <div id="status"></div>
+  <div class="score"><span>Points <b id="pts">0</b></span><span>Krillions <b id="k">0</b></span><span>Answered <b id="n">0</b></span></div>
+  <ul id="feed"></ul>
+</section>
+
+<section id="data">
+  <label>Search prompts</label>
+  <input id="q" placeholder="e.g. cheese, capital, Pokémon">
+  <div id="results"></div>
+</section>
+
+<script src="renderer.js"></script>
+</body>
+</html>
