@@ -37,6 +37,14 @@ $("go").addEventListener("click", () => {
   window.bot.start({ code, prompts: +$("prompts").value, pace: $("pace").value });
 });
 
+$("cp").addEventListener("click", () => window.bot.control("pause"));
+$("ct").addEventListener("click", () => window.bot.control("takeover"));
+$("ch").addEventListener("click", () => window.bot.control("hud"));
+$("manual").addEventListener("submit", (e) => { e.preventDefault(); window.bot.control("manual-answer", $("mi").value); $("mi").value = ""; });
+window.bot.hotkeys().then((keys) => {
+  $("keys").textContent = "Hotkeys: " + keys.map((h) => `${h.key} ${h.name}${h.ok ? "" : " (unavailable)"}`).join(" · ");
+});
+
 const el = (tag, cls, text) => Object.assign(document.createElement(tag), { className: cls || "", textContent: text ?? "" });
 
 window.bot.on((m) => {
@@ -47,7 +55,7 @@ window.bot.on((m) => {
     current = el("li");
     current.append(el("div", "p", m.text));
     if (!m.source) current.append(el("div", "a", "No known or similar answer: skipped"));
-    else if (m.source !== "dataset") current.append(el("div", "src", "Not in dataset, borrowing from " + m.source.replace(/^similar: /, "“") + "”"));
+    else if (m.source !== "dataset") current.append(el("div", "src", "No top answer known, borrowing from " + m.source.replace(/^similar: /, "“") + "”"));
     $("feed").prepend(current);
   }
   if (m.ev === "attempt") {
@@ -60,6 +68,14 @@ window.bot.on((m) => {
     attempt?.prepend(el("span", "tag " + m.tier, m.tier === "miss" ? "refused" : m.tier + " · " + m.points));
     $("status").textContent = m.tier === "miss" ? "Refused, trying another answer…" : "Waiting for the next prompt…";
   }
+  if (m.ev === "hotkey-start" && !running) $("go").click();
+  if (m.ev === "controls") {
+    $("cp").textContent = m.paused ? "Resume" : "Pause"; $("cp").classList.toggle("on", m.paused);
+    $("ct").textContent = m.takeover ? "Cancel takeover" : "Take over"; $("ct").classList.toggle("on", m.takeover);
+  }
+  if (m.ev === "manual") { $("manual").classList.add("on"); $("mi").focus(); $("status").textContent = `Your turn: type the bot's answer (${m.seconds}s left)`; }
+  if (m.ev === "manual-end") $("manual").classList.remove("on");
+  if (m.ev === "skipped") { current?.append(el("div", "a retry", m.why === "paused" ? "Skipped: paused" : m.why === "time" ? "Out of time" : "Skipped")); }
   if (m.ev === "done") { $("status").textContent = `${m.reason}. ${m.points} points.`; setRunning(false); }
 });
 

@@ -38,6 +38,10 @@
   .krillion { background:var(--t5); color:#2a0012 } .deepcut { background:var(--t4); color:#2a1700 }
   .rare { background:var(--t3); color:#002a0c } .schooler { background:var(--t2); color:#001a33 }
   .tooclever, .plankton { background:var(--t1); color:#111 } .miss { background:var(--miss); color:white }
+  .ctl { margin-top:8px; } .ctl button, .send { background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:7px; font:inherit; cursor:pointer; }
+  .ctl button.on { border-color:var(--t4); color:var(--t4); }
+  #manual { display:none; margin-top:8px; } #manual.on { display:flex; } #manual input { border-color:var(--t5); } .send { flex:0 0 auto; }
+  .keys { margin-top:6px; font-size:11px; color:var(--muted); }
   #status { color:var(--muted); font-size:12px; margin-top:8px; min-height:18px; }
   #results .q { margin-top:10px; font-weight:600; }
   #results .ans { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
@@ -62,6 +66,9 @@
     <div><label>Pace</label><select id="pace"><option value="human">Human (thinks, then types)</option><option value="fast">Instant</option></select></div>
   </div>
   <button class="go" id="go">Start</button>
+  <div class="row ctl"><button id="cp">Pause</button><button id="ct">Take over</button><button id="ch">HUD</button></div>
+  <form id="manual" class="row"><input id="mi" placeholder="Type the bot's answer…" autocomplete="off"><button class="send">Send</button></form>
+  <div class="keys" id="keys"></div>
   <div class="note">The bot plays as its own player in a separate window. Tell the other people in the room which player is the bot.</div>
   <div class="code" id="room"></div>
   <div id="status"></div>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>Krillion Bot HUD</title>
+<style>
+  :root { --text:#d8ecf7; --muted:#8fb2c6; --accent:#4fd1e8; --t5:#ff6b9d; --t4:#ffb347; --miss:#e05555; }
+  html, body { margin:0; background:transparent; overflow:hidden; }
+  .hud { margin:6px; padding:10px 12px; border-radius:10px; background:rgba(6,20,32,.88); color:var(--text);
+         font:13px/1.4 system-ui, sans-serif; border:1px solid rgba(79,209,232,.35); -webkit-app-region:drag; }
+  .top { display:flex; align-items:center; gap:8px; }
+  .state { font:700 11px system-ui; letter-spacing:.08em; padding:2px 8px; border-radius:10px; background:#1d3b52; }
+  .state.run { background:var(--accent); color:#04202b } .state.pause { background:var(--t4); color:#2a1700 }
+  .state.manual { background:var(--t5); color:#2a0012 }
+  .score { margin-left:auto; color:var(--muted); font-size:12px; } .score b { color:var(--text); }
+  .prompt { margin-top:8px; color:var(--muted); font-size:12px; min-height:16px; }
+  .answer { font-weight:600; min-height:18px; }
+  .last { font-size:12px; color:var(--muted); min-height:16px; }
+  .last.krillion { color:var(--t5) } .last.deepcut { color:var(--t4) } .last.miss { color:var(--miss) }
+  form { display:none; margin-top:6px; gap:6px; -webkit-app-region:no-drag; }
+  form.on { display:flex; }
+  form input { flex:1; background:#0b2232; color:var(--text); border:1px solid var(--t5); border-radius:6px; padding:6px; font:inherit; }
+  form button, .btns button { background:#1d3b52; color:var(--text); border:none; border-radius:6px; padding:6px 9px; font:inherit; cursor:pointer; }
+  .btns { display:flex; gap:6px; margin-top:8px; -webkit-app-region:no-drag; }
+  .btns button { flex:1; font-size:12px; }
+  .keys { margin-top:6px; font-size:10px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="hud">
+  <div class="top"><span class="state" id="state">IDLE</span><span class="score">pts <b id="pts">0</b> · krillions <b id="k">0</b></span></div>
+  <div class="prompt" id="prompt">Start a room from the main window.</div>
+  <div class="answer" id="answer"></div>
+  <div class="last" id="last"></div>
+  <form id="manual"><input id="mi" placeholder="Type the bot's answer…" autocomplete="off"><button>Send</button></form>
+  <div class="btns"><button id="bp">Pause</button><button id="bt">Take over</button><button id="bs">Start</button></div>
+  <div class="keys" id="keys"></div>
+</div>
+<script src="hud.js"></script>
+</body>
+</html>

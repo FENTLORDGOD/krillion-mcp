@@ -21,7 +21,9 @@
       "answers.js",
       "preload.js",
       "index.html",
-      "renderer.js"
+      "renderer.js",
+      "hud.html",
+      "hud.js"
     ],
     "extraResources": [
       {

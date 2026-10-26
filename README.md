@@ -57,6 +57,14 @@ Solo test: 6/7 one in a krillion.
 A GUI for the room bot. The bot plays in its own visible game window as a separate, named player.
 - **Play tab:** create a private room or join by code, choose prompt count and pace (human or instant), then Start. Shows the room code, a live feed of prompts, answers and tiers, and a running score.
 - **Dataset tab:** search prompts and see every recorded answer, coloured by tier.
+- **HUD:** a small always-on-top panel showing the bot's state, current prompt, planned answer and score, with Pause / Take over / Start-Stop buttons. Drag it anywhere.
+- **Hotkeys** (global, so they work while another window is focused):
+  - `Ctrl+Alt+P` pause/resume: while paused the bot skips prompts
+  - `Ctrl+Alt+T` take over: you type the bot's answer for the current or next prompt (box appears in the HUD)
+  - `Ctrl+Alt+H` show/hide the HUD
+  - `Ctrl+Alt+S` start/stop
+  On a Steam Deck, map the back paddles to these key combos in Steam Input. Global hotkeys need X11 or XWayland; on pure Wayland desktops use the HUD buttons.
+- **Unknown prompts:** borrows top-tier answers from the most similarly worded prompts; if the game refuses one it tries the next while time allows.
 
 Run the AppImage: `chmod +x Krillion-Room-Bot-1.0.0-x86_64.AppImage && ./Krillion-Room-Bot-1.0.0-x86_64.AppImage`
 Build it yourself: `cd app && npm install && npm run dist` (output in `app/dist/`). Run from source: `npm start`.
