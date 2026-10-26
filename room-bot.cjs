@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // Plays a Krillion multiplayer room using data/answers.json.
 // For each prompt it types a known tier-5 ("one in a krillion") answer, or a tier-4 one if none is known.
-// Usage: node room-bot.cjs [roomCode] [--prompts N] [--name NAME] [--video DIR]
+// Usage: node room-bot.cjs [roomCode] [--prompts N] [--video DIR] [--fast] [--show]
+//   --show opens a visible browser window so you can watch it play.
+//   Answers at a human pace by default (thinks, then types); --fast submits instantly.
 //   no roomCode -> creates a private room and prints its code.
 const { chromium } = require("playwright");
 const fs = require("fs");
@@ -14,6 +16,26 @@ const PROMPTS = opt("--prompts", "5");
 const NAME = opt("--name", null);
 const VIDEO = opt("--video", null);
 const DB = path.join(__dirname, "data", "answers.json");
+const FAST = args.includes("--fast");
+const rand = (a, b) => a + Math.random() * (b - a);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let clockSec = 25; // updated from the room id, e.g. "p7-t30-..." = 30s per prompt
+
+// Type like a person: think first, then type with uneven gaps, finishing well inside the clock.
+async function humanType(page, input, answer) {
+  const typingMs = answer.length * 180 + 800;
+  const latest = clockSec * 1000 - 4000 - typingMs; // leave ~4s spare
+  const think = Math.max(1500, Math.min(rand(0.25, 0.6) * clockSec * 1000, latest));
+  await sleep(think);
+  await input.click();
+  for (const ch of answer) {
+    await input.press(ch === " " ? "Space" : ch).catch(() => input.type(ch));
+    await sleep(rand(70, 220) + (Math.random() < 0.08 ? rand(250, 600) : 0));
+  }
+  await sleep(rand(300, 900));
+  await input.press("Enter");
+  return think;
+}
 
 const pick = (id) => {
   const e = JSON.parse(fs.readFileSync(DB, "utf8"))[id];
@@ -27,7 +49,7 @@ const pick = (id) => {
 };
 
 (async () => {
-  const b = await chromium.launch();
+  const b = await chromium.launch({ headless: !args.includes("--show") });
   const ctx = await b.newContext({ viewport: { width: 900, height: 900 }, ...(VIDEO && { recordVideo: { dir: VIDEO } }) });
   const p = await ctx.newPage();
   const byText = new Map(); // prompt text -> id, from the room lineup
@@ -35,6 +57,8 @@ const pick = (id) => {
   p.on("response", async (r) => {
     const u = r.url();
     try {
+      const t = /room=[^&]*?-t(\d+)/.exec(u);
+      if (t) clockSec = +t[1];
       if (u.includes("/api/krillion/rooms/lineup")) for (const q of (await r.json()).prompts || []) byText.set(q.text, q.id);
       if (/\/api\/krillion\/answer$/.test(u)) {
         const v = await r.json();
@@ -68,8 +92,8 @@ const pick = (id) => {
     const choice = pick(byText.get(text));
     const answer = choice?.answer ?? "Nefandous"; // no data: placeholder, will likely be refused
     console.log(`PROMPT: ${text}\n  answer: ${answer} (${choice ? "dataset tier " + choice.fromTier : "NOT IN DATASET"})`);
-    await input.fill(answer);
-    await input.press("Enter");
+    if (FAST) { await input.fill(answer); await input.press("Enter"); }
+    else console.log(`  (thought for ${((await humanType(p, input, answer)) / 1000).toFixed(1)}s, ${clockSec}s clock)`);
     played++;
     await p.waitForTimeout(1500);
   }

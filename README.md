@@ -47,6 +47,8 @@ For private rooms with people who know they're playing an AI.
 npm install playwright && npx playwright install chromium
 node room-bot.cjs --prompts 7      # create a private room, prints the 6-digit code
 node room-bot.cjs 123456           # join an existing room by code
+node room-bot.cjs --show           # visible browser window: watch it play live
 ```
+Answers at a human pace by default: thinks for 25-60% of the clock, then types with natural gaps (finishes ~4s before time). `--fast` submits instantly.
 Each prompt: types a known tier-5 answer, else tier-4, else tier-3. Prompts not in the dataset get a placeholder and usually miss.
 Solo test: 6/7 one in a krillion.
