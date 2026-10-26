@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 const TIERS = ["plankton", "too clever", "schooler", "rare", "deep cut", "one in a krillion"];
 const TIER_CLASS = ["plankton", "tooclever", "schooler", "rare", "deepcut", "krillion"];
-let running = false, pts = 0, k = 0, n = 0, current = null;
+let running = false, pts = 0, k = 0, n = 0, current = null, attempt = null;
 
 document.querySelectorAll("nav button").forEach((b) =>
   b.addEventListener("click", () => {
@@ -45,15 +45,20 @@ window.bot.on((m) => {
   if (m.ev === "thinking") $("status").textContent = `Thinking for ${m.seconds.toFixed(1)}s (${m.clockSec}s clock)…`;
   if (m.ev === "prompt") {
     current = el("li");
-    current.append(el("div", "p", m.text), el("div", "a", m.answer ?? "No known answer: skipped"));
-    if (!m.answer) current.prepend(el("span", "tag", "no data"));
+    current.append(el("div", "p", m.text));
+    if (!m.source) current.append(el("div", "a", "No known or similar answer: skipped"));
+    else if (m.source !== "dataset") current.append(el("div", "src", "Not in dataset, borrowing from " + m.source.replace(/^similar: /, "“") + "”"));
     $("feed").prepend(current);
+  }
+  if (m.ev === "attempt") {
+    attempt = el("div", "a" + (m.retry ? " retry" : ""), (m.retry ? "↳ " : "") + m.answer);
+    current?.append(attempt);
   }
   if (m.ev === "result") {
     n++; pts += m.points; if (m.tier === "krillion") k++;
     $("pts").textContent = pts; $("k").textContent = k; $("n").textContent = n;
-    if (current) current.prepend(el("span", "tag " + m.tier, m.tier === "krillion" ? "krillion · " + m.points : m.tier + " · " + m.points));
-    $("status").textContent = "Waiting for the next prompt…";
+    attempt?.prepend(el("span", "tag " + m.tier, m.tier === "miss" ? "refused" : m.tier + " · " + m.points));
+    $("status").textContent = m.tier === "miss" ? "Refused, trying another answer…" : "Waiting for the next prompt…";
   }
   if (m.ev === "done") { $("status").textContent = `${m.reason}. ${m.points} points.`; setRunning(false); }
 });

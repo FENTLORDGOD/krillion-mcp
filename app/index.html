@@ -32,7 +32,8 @@
   .score b { color:var(--text); font-size:16px; }
   #feed { list-style:none; padding:0; margin:10px 0 0; max-height:300px; overflow:auto; }
   #feed li { padding:7px 0; border-top:1px solid var(--line); }
-  .p { color:var(--muted); font-size:12px; } .a { font-weight:600; }
+  .p { color:var(--muted); font-size:12px; } .a { font-weight:600; margin-top:2px; } .a.retry { font-weight:500; color:var(--muted); }
+  .src { font-size:11px; color:var(--t4); }
   .tag { float:right; font-size:11px; padding:1px 7px; border-radius:10px; background:var(--line); }
   .krillion { background:var(--t5); color:#2a0012 } .deepcut { background:var(--t4); color:#2a1700 }
   .rare { background:var(--t3); color:#002a0c } .schooler { background:var(--t2); color:#001a33 }
@@ -64,7 +65,7 @@
   <div class="note">The bot plays as its own player in a separate window. Tell the other people in the room which player is the bot.</div>
   <div class="code" id="room"></div>
   <div id="status"></div>
-  <div class="score"><span>Points <b id="pts">0</b></span><span>Krillions <b id="k">0</b></span><span>Answered <b id="n">0</b></span></div>
+  <div class="score"><span>Points <b id="pts">0</b></span><span>Krillions <b id="k">0</b></span><span>Attempts <b id="n">0</b></span></div>
   <ul id="feed"></ul>
 </section>
 

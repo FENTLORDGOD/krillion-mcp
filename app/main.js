@@ -15,15 +15,8 @@ const send = (ev, data) => control && !control.isDestroyed() && control.webConte
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const rand = (a, b) => a + Math.random() * (b - a);
 
-function pick(id) {
-  const e = db[id];
-  if (!e?.answers) return null;
-  for (const tier of [5, 4, 3]) {
-    const c = e.answers.filter(([t, a]) => t === tier && a.length <= 30).map(([, a]) => a);
-    if (c.length) return { answer: c[Math.floor(Math.random() * c.length)], fromTier: tier };
-  }
-  return null;
-}
+const { createPicker } = require("./answers.js");
+const candidates = createPicker(db);
 
 // The answer box: a visible text input that isn't the room chat.
 const ANSWER_INPUT = `[...document.querySelectorAll("input")].find(i => i.offsetParent && !/message/i.test(i.placeholder))`;
@@ -32,6 +25,18 @@ const ANSWER_INPUT = `[...document.querySelectorAll("input")].find(i => i.offset
 const js = (code) => game.webContents.executeJavaScript(code, true).catch(() => null);
 const clickButton = (re) =>
   js(`(() => { const b = [...document.querySelectorAll("button")].find(b => ${re}.test(b.textContent.trim())); if (b) { b.click(); return true } return false })()`);
+
+const hasButton = (re) => js(`[...document.querySelectorAll("button")].some(b => ${re}.test(b.textContent.trim()))`);
+
+// Clicks `click` until the `expect` button shows up (clicks before the page finishes loading are ignored).
+async function step(click, expect, ms = 25000) {
+  const end = Date.now() + ms;
+  while (Date.now() < end && run) {
+    await clickButton(click);
+    if (await waitFor(() => hasButton(expect), 3000)) return true;
+  }
+  return false;
+}
 
 async function waitFor(fn, ms = 20000) {
   const end = Date.now() + ms;
@@ -43,10 +48,12 @@ async function waitFor(fn, ms = 20000) {
   return false;
 }
 
-async function typeAnswer(answer, clockSec, pace) {
+// Types one answer within budgetMs. Human pace thinks first (shorter on a retry), then types unevenly.
+async function typeAnswer(answer, budgetMs, clockSec, pace, retry) {
   if (pace === "human") {
     const typingMs = answer.length * 180 + 800;
-    const think = Math.max(1500, Math.min(rand(0.25, 0.6) * clockSec * 1000, clockSec * 1000 - 4000 - typingMs));
+    const want = retry ? rand(1000, 3000) : rand(0.25, 0.6) * clockSec * 1000;
+    const think = Math.max(500, Math.min(want, budgetMs - 3000 - typingMs));
     send("thinking", { seconds: think / 1000, clockSec });
     await sleep(think);
   }
@@ -62,9 +69,27 @@ async function typeAnswer(answer, clockSec, pace) {
   game.webContents.sendInputEvent({ type: "keyUp", keyCode: "Enter" });
 }
 
+// Tries candidates in order until one is accepted or the clock is nearly out.
+async function answerPrompt(me, id, text) {
+  const t0 = Date.now(), clockMs = me.clockSec * 1000;
+  const cands = candidates(id, text);
+  send("prompt", { text, source: cands[0]?.source ?? null });
+  for (let i = 0; i < cands.length && run === me; i++) {
+    const { answer, source } = cands[i];
+    const budget = clockMs - (Date.now() - t0);
+    if (budget < answer.length * (me.pace === "human" ? 220 : 0) + 2500) break;
+    send("attempt", { answer, source, retry: i > 0 });
+    const before = me.results.length;
+    await typeAnswer(answer, budget, me.clockSec, me.pace, i > 0);
+    await waitFor(async () => me.results.length > before, 6000);
+    const r = me.results[me.results.length - 1];
+    if (me.results.length > before && r.accepted) return;
+  }
+}
+
 async function start({ code, prompts, pace }) {
   if (run) return;
-  run = { byText: new Map(), clockSec: 25, results: [] };
+  run = { byText: new Map(), clockSec: 25, results: [], pace };
   const me = run;
   game = new BrowserWindow({ width: 900, height: 900, title: "Krillion · bot player", autoHideMenuBar: true });
   game.on("closed", () => { game = null; if (run === me) stop("Game window closed"); });
@@ -87,7 +112,7 @@ async function start({ code, prompts, pace }) {
       try {
         const body = JSON.parse((await dbg.sendCommand("Network.getResponseBody", { requestId: p.requestId })).body);
         if (kind === "lineup") for (const q of body.prompts || []) me.byText.set(q.text, q.id);
-        else { me.results.push(body); send("result", { tier: body.tier, points: body.points || 0, reason: body.reason }); }
+        else { me.results.push(body); send("result", { tier: body.tier, points: body.points || 0, reason: body.reason, answer: body.answer }); }
       } catch {}
     }
   });
@@ -96,10 +121,10 @@ async function start({ code, prompts, pace }) {
   if (!code) {
     send("status", { text: "Creating a private room…" });
     const ok =
-      (await waitFor(() => clickButton(/play multiplayer/i))) &&
-      (await waitFor(() => clickButton(/create a room/i))) &&
-      (await waitFor(() => clickButton(new RegExp(`^${prompts}\\s*prompts`, "i")))) &&
-      (await waitFor(() => clickButton(/^private$/i))) &&
+      (await step(/play multiplayer/i, /create a room/i)) &&
+      (await step(/create a room/i, /^private$/i)) &&
+      (await step(new RegExp(`^${prompts}\\s*prompts`, "i"), /^private$/i)) &&
+      (await step(/^private$/i, /create private room/i)) &&
       (await waitFor(() => clickButton(/create private room/i)));
     if (!ok) return stop("Couldn't create a room (the game's layout may have changed)");
   }
@@ -114,9 +139,7 @@ async function start({ code, prompts, pace }) {
     const text = state?.input && [...me.byText.keys()].find((t) => state.body.includes(t));
     if (!text || text === last) { await sleep(300); continue; }
     last = text;
-    const choice = pick(me.byText.get(text));
-    send("prompt", { text, answer: choice?.answer ?? null, fromTier: choice?.fromTier ?? null });
-    if (choice) await typeAnswer(choice.answer, me.clockSec, pace);
+    await answerPrompt(me, me.byText.get(text), text);
     played++;
     await sleep(1500);
   }
@@ -127,7 +150,7 @@ function stop(reason) {
   if (!run) return;
   const r = run;
   run = null;
-  const pts = r.results.reduce((s, x) => s + (x.points || 0), 0);
+  const pts = r.results.reduce((s, x) => s + (x.points || 0), 0); // refused attempts score 0
   send("done", { reason, points: pts, results: r.results.map((x) => x.tier) });
   if (game && !game.isDestroyed()) game.close();
 }

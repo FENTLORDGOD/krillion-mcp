@@ -18,6 +18,7 @@
     "appId": "org.krillion.roombot",
     "files": [
       "main.js",
+      "answers.js",
       "preload.js",
       "index.html",
       "renderer.js"
